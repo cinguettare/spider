@@ -44,39 +44,48 @@ class mzt():
         Soup = BeautifulSoup(html.text, 'lxml')
         return Soup
     # 获取图片url
-    def get_img(self, html):
+    def get_img(self, url):
+        j_url = []
+        html = self.get_html(url)
+        img_url = html.find('article', "article-content").find_all('p')
         cut = re.compile(r'http.*jpg')
-        img_html = re.findall(cut, str(html))  # 获取图片url
-        return img_html
+        for i_jpg in img_url:
+            jpg_url = re.findall(cut, str(i_jpg))            # 获取图片url
+            j_url.extend(jpg_url)
+        return j_url
 
-    def get_next_url(self, url):
-        pass
+    def get_next_url(self, url_h, url_t):
+        a_url = []
+        while True:
+            next_url = url_h                    # 套图页面url
+            urlh = self.cut_url(url_h)          # 切割出url前部分
+            urlt = self.next_url(url_t)         # 获取下一页的url尾部
+            n_url = urlh[0] + urlt              # 下一页套图url
+            url_h = n_url                       # 赋值给下一页，方便转换
+            url_t = self.get_html(next_url)     # 获取下一页页面内容
+            a_url.append(next_url)
+            if n_url == urlh[0]:
+                url = list(set(a_url))
+                url.sort(key=a_url.index)
+                return url
     # 主程序
     def a_url(self, url):
-        s_url = self.in_url(url)      # 进行挑选
+        s_url = self.in_url(url)                # 进行挑选
         url_header = 'http://zhaofuli.xyz'
-        html = self.get_html(s_url)        # 获得html
+        html = self.get_html(s_url)             # 获得html
         a_list = html.find('div', "content").find_all('h2')    # 找到套图url的范围
         for a in a_list:
             title = a.get_text()               # 获取该套图名称
-            href = url_header + a.find('a')['href']       # 获取套图url
-            img_html = self.get_html(href)      # 获取套图的网页内容
+            href = url_header + a.find('a')['href']            # 获取套图url
+            img_html = self.get_html(href)     # 获取套图的网页内容
             imgL = img_html
             imgh = href
-            # 找到图片url的范围
-            get_img = img_html.find('article', "article-content").find_all('p')
-            for im in get_img:
-                key = 1
-                print(im)
-                while key:
-                  next_url = url
-                  url1 = self.cut_url(imgh)  # 切割出url前部分
-                  url2 = self.next_url(imgL)  # 获取下一页的套图url
-                  im = url1[0] + url2  # 下一页套图url
-                  imgh = im
-                  imgL = self.get_html(im)
-                    if im == url1[0]:
-                        break
+            n_url = self.get_next_url(imgh, imgL)
+            for i_url in n_url:
+                imgg = self.get_img(i_url)
+                for im in imgg:
+                    print(im)
+                
                         
                         
            
