@@ -65,11 +65,11 @@ class mzt():
     def get_next_url(self, url, html):
         a_url = []
         while True:
-            next_url = url                    # 套图页面url
+            next_url = url                     # 套图页面url
             c_url = self.cut_url(url)          # 切割出url前部分
-            h_url = self.next_url(html)         # 获取下一页的url尾部
-            n_url = c_url[0] + h_url              # 下一页套图url
-            url = n_url                       # 赋值给下一页，方便转换
+            h_url = self.next_url(html)        # 获取下一页的url尾部
+            n_url = c_url[0] + h_url           # 下一页套图url
+            url = n_url                        # 赋值给下一页，方便转换
             html = self.get_html(next_url)     # 获取下一页页面内容
             a_url.append(next_url)
             if n_url == c_url[0]:
