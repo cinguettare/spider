@@ -1,10 +1,10 @@
 #!/usr/bin/python3
-# 改进中。。
+
 import os
 import re
-import requests
 from bs4 import BeautifulSoup
-from fake_useragent import UserAgent
+from meizhitu.Myuseragent import myrequest
+# 无文件夹的话可直接Myuseragent
 
 class mzt():
 
@@ -24,8 +24,7 @@ class mzt():
 
     # 获取网页内容
     def request(self, url):
-        ua = UserAgent()
-        start_html = requests.get(url, ua.random)
+        start_html = myrequest.get(url, 3)
         start_html.encoding = 'gb18030'
         return start_html
 
