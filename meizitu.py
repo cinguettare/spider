@@ -2,10 +2,21 @@
 
 import os
 import re
-from bs4 import BeautifulSoup
+import datetime
+from pymongo import MongoClient
 from Myuseragent import myrequest
+from bs4 import BeautifulSoup
+
 
 class mzt():
+
+    def __init__(self):
+        client = MongoClient()                   # 与MongDB建立连接
+        db = client['yishutupianji']             # 选择数据库
+        self.meizitu_collection = db['meizitu']  # 选择集合
+        self.title = ''                          # 保存页面主题
+        self.url = ''                            # 保存页面地址
+        self.img_urls = []                       # 保存图片地址
 
     # 选择下载的图片系列
     def in_url(self, url):
@@ -63,12 +74,12 @@ class mzt():
     def get_next_url(self, url, html):
         a_url = []
         while True:
-            next_url = url                     # 套图页面url
-            c_url = self.cut_url(url)          # 切割出url前部分
-            h_url = self.next_url(html)        # 获取下一页的url尾部
-            n_url = c_url[0] + h_url           # 下一页套图url
-            url = n_url                        # 赋值给下一页，方便转换
-            html = self.get_html(next_url)     # 获取下一页页面内容
+            next_url = url                          # 套图页面url
+            c_url = self.cut_url(url)               # 切割出url前部分
+            h_url = self.next_url(html)             # 获取下一页的url尾部
+            n_url = c_url[0] + h_url                # 下一页套图url
+            url = n_url                             # 赋值给下一页，方便转换
+            html = self.get_html(next_url)          # 获取下一页页面内容
             a_url.append(next_url)
             if n_url == c_url[0]:
                 url_l = list(set(a_url))
@@ -98,27 +109,41 @@ class mzt():
     # 主程序
     def a_url(self, url):
         url_header = 'http://zhaofuli.xyz'
-        f_url = self.in_url(url)               # 获得url
-        html = self.get_html(f_url)            # 获得html
+        f_url = self.in_url(url)                      # 获得url
+        html = self.get_html(f_url)                   # 获得html
         all_url = self.get_next_url(f_url, html)
-        for f in all_url:
-            a_list = f.find('div', "content").find_all('h2')    # 找到套图url的范围
+        for u_all in all_url:
+            u = self.get_html(u_all)
+            a_list = u.find('div', "content").find_all('h2')    # 找到套图url的范围
             for a in a_list:
-                title = a.get_text()               # 获取该套图名称
+                title = a.get_text()                   # 获取该套图名称
+                self.title = title
                 self.mkdir(title)
                 href = url_header + a.find('a')['href']         # 获取套图url
-                img_html = self.get_html(href)     # 获取套图的网页内容
-                n_url = self.get_next_url(href, img_html)       # 获取每一页的套图url
-                for i in n_url:
-                    a_jpg = self.get_img(i)
-                    for jpg_url in a_jpg:
-                        self.save(jpg_url)
+                self.url = href
+                if self.meizitu_collection.find_one({'套图页面': href}):
+                    print(u'这个页面已经爬取过了')
+                else:
+                    img_html = self.get_html(href)     # 获取套图的网页内容
+                    n_url = self.get_next_url(href, img_html)   # 获取该套图所有url
+                    for i in n_url:
+                        a_jpg = self.get_img(i)
+                        for jpg_url in a_jpg:
+                            self.img_urls.append(jpg_url)
+                            print(u'开始保存: ', jpg_url)
+                            self.save(jpg_url)
+                    post = {
+                        '标题': self.title,
+                        '套图页面': self.url,
+                        '图片地址': self.img_urls,
+                        '获取时间': datetime.datetime.now()
+                    }
+                    self.meizitu_collection.a_url(post)
+                    print(u'插入数据库成功')
 
 
 
 Mzt = mzt()
 Mzt.a_url('http://zhaofuli.xyz/')
-                
-                        
                         
            
