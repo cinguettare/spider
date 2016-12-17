@@ -3,8 +3,7 @@
 import os
 import re
 from bs4 import BeautifulSoup
-from meizhitu.Myuseragent import myrequest
-# 无文件夹的话可直接Myuseragent
+from Myuseragent import myrequest
 
 class mzt():
 
