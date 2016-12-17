@@ -50,4 +50,4 @@ class Myheader():
                     print(u'代理出错！ 取消代理！')
                     return self.get(url, 3)
 
-request = Myheader()
+myrequest = Myheader()
