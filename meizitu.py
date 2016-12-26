@@ -4,7 +4,6 @@ import os
 import re
 import wget
 import datetime
-
 from pymongo import MongoClient
 from Myuseragent import myrequest
 from bs4 import BeautifulSoup
