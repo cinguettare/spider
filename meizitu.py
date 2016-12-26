@@ -3,6 +3,7 @@
 import os
 import re
 import wget
+import time
 import datetime
 from pymongo import MongoClient
 from Myuseragent import myrequest
@@ -12,7 +13,7 @@ from bs4 import BeautifulSoup
 class mzt():
 
     def __init__(self):
-        client = MongoClient()                   # 与MongDB建立连接
+        client = MongoClient()                   # 与MongoDB建立连接
         db = client['yishutupianji']             # 选择数据库
         self.meizitu_collection = db['meizitu']  # 选择集合
         self.title = ''                          # 保存页面主题
@@ -20,22 +21,22 @@ class mzt():
         self.img_urls = []                       # 保存图片地址
 
     # 选择下载的图片系列
-    def in_url(self, url):
+    def get_url(self, url, page):
         while True:
             select_img = input("请选择下载的类型('花花公子系列'（h）或'无圣光套图系列'(w)): ")
             if select_img == 'h':
-                s_url = url + 'zhainanshe/'
+                s_url = url + 'zhainanshe/list_4_'+str(page)+'.html'
                 return s_url
             elif select_img == 'w':
-                s_url = url + 'luyilu/'
+                s_url = url + 'luyilu/list_5_'+str(page)+'.html'
                 return s_url
             else:
-                print("输入错误")
+                print(u"输入错误")
                 continue
 
     # 获取网页内容
     def request(self, url):
-        start_html = myrequest.get(url, 3)
+        start_html = myrequest.get(url)
         start_html.encoding = 'gb18030'
         return start_html
 
@@ -94,53 +95,60 @@ class mzt():
         if not isExists:
             print(u"建立", path, u"文件夹！")
             os.makedirs(os.path.join("E:\meizitu", path))
-            os.chdir("E:\meizitu\\" + path)
+            return True
         else:
             print(path, u"已经存在了！")
             return False
 
-    # 保存图片
-    def save(self, img_url):
-        wget.download(img_url)
 
-    # 主程序
-    def a_url(self, url):
-        url_header = 'http://zhaofuli.xyz'
-        f_url = self.in_url(url)                      # 获得url
-        html = self.get_html(f_url)                   # 获得html
-        all_url = self.get_next_url(f_url, html)
-        for u_all in all_url:
-            u = self.get_html(u_all)
-            a_list = u.find('div', "content").find_all('h2')    # 找到套图url的范围
+    def html(self, href, img_max, img_num):
+        img_html = self.get_html(href)  # 获取套图的网页内容
+        n_url = self.get_next_url(href, img_html)  # 获取该套图所有url
+        for i in n_url:
+            a_jpg = self.get_img(i)
+            img_max += len(a_jpg)
+            for jpg_url in a_jpg:
+                self.img_urls.append(jpg_url)
+                time.sleep(0.3)
+                print(u'开始保存:', jpg_url)
+                wget.download(jpg_url)
+                img_num += 1
+        if img_num == img_max:
+            post = {
+                '标题': self.title,
+                '套图页面': self.url,
+                '图片地址': self.img_urls,
+                '获取时间': datetime.datetime.now()
+            }
+            self.meizitu_collection.save(post)
+            print(u"插入数据库成功")
+
+    #
+    def a_url(self, url, page=1):
+        key = 1
+        while key:
+            url_header = 'http://zhaofuli.xyz'
+            f_url = self.get_url(url, page)                      # 获得url
+            html = self.get_html(f_url)                # 获得html
+            a_list = html.find('div', "content").find_all('h2')    # 找到套图url的范围
             for a in a_list:
                 title = a.get_text()                   # 获取该套图名称
                 self.title = title
                 self.mkdir(title)
+                os.chdir("E:\meizitu\\" + title)
                 href = url_header + a.find('a')['href']         # 获取套图url
                 self.url = href
                 if self.meizitu_collection.find_one({'套图页面': href}):
                     print(u'这个页面已经爬取过了')
                 else:
-                    img_html = self.get_html(href)     # 获取套图的网页内容
-                    n_url = self.get_next_url(href, img_html)   # 获取该套图所有url
-                    for i in n_url:
-                        a_jpg = self.get_img(i)
-                        for jpg_url in a_jpg:
-                            self.img_urls.append(jpg_url)
-                            print(u'开始保存: ', jpg_url)
-                            self.save(jpg_url)
-                    post = {
-                        '标题': self.title,
-                        '套图页面': self.url,
-                        '图片地址': self.img_urls,
-                        '获取时间': datetime.datetime.now()
-                    }
-                    self.meizitu_collection.a_url(post)
-                    print(u'插入数据库成功')
+                    self.html(href, 0, 0)
+            key = 0
+        page += 1
+        return self.a_url(url, page=page)
+
 
 
 
 Mzt = mzt()
 Mzt.a_url('http://zhaofuli.xyz/')
-                        
            
