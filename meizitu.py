@@ -2,7 +2,9 @@
 
 import os
 import re
+import wget
 import datetime
+
 from pymongo import MongoClient
 from Myuseragent import myrequest
 from bs4 import BeautifulSoup
@@ -100,11 +102,7 @@ class mzt():
 
     # 保存图片
     def save(self, img_url):
-        name = img_url[-14:-4]
-        img = self.request(img_url)
-        f = open(name + '.jpg', 'ab')
-        f.write(img.content)
-        f.close()
+        wget.download(img_url)
 
     # 主程序
     def a_url(self, url):
